@@ -5,7 +5,8 @@
 1. Спроектируйте to be архитектуру КиноБездны, разделив всю систему на отдельные домены и организовав интеграционное взаимодействие и единую точку вызова сервисов.
 Результат представьте в виде контейнерной диаграммы в нотации С4.
 Добавьте ссылку на файл в этот шаблон
-[ссылка на файл](ссылка)
+[CinemaAbyss_ArchDesign](./CinemaAbyss_ArchDesign.md)
+
 
 # Задание 2
 
@@ -46,6 +47,24 @@
    ```
 - Протестируйте постепенный переход, изменив переменную окружения MOVIES_MIGRATION_PERCENT в файле docker-compose.yml.
 
+> **ВАЖНО**: для прокси был реализован не сервис на любом языке программирования, а поднят KONG. Для этого:
+> 
+> 1. Был создан файл: `./architecture-cinemaabyss/src/database/create-dbs.sql` для создания БД `cinemaabyss` и `kong` в одном контейнере.
+> 2. Был создан файл: `./architecture-cinemaabyss/kong-init.sh` для добавления балансировки и маршрута
+> 3. В `docker-compose.yaml` был изменен сервис postgres:
+>    1. Убрана инициализация БД `POSTGRES_DB: cinemaabyss`
+>    2. Добавлена ссылка на скрпит создания двух БД: `./src/database/create-dbs.sql:/docker-entrypoint-initdb.d/01-create-dbs.sql`
+>    3. Отрадактирована ссылка создания БД `cinemaabyss`: `./src/database/init.sql:/docker-entrypoint-initdb.d/02-init.sql`
+> 4. В `docker-compose.yaml` был добавлен сервис `proxy-service-migrations` для инициализации БД Kong (поселе полной установки, контейнер можно удалить).
+> 5. В `docker-compose.yaml` был отрадактирован сервис `proxy-service` для установки Kong вместо самописного сервиса.
+> 6. В `docker-compose.yaml` был добавлен сервис `proxy-service-init` для создания балансировки и маршрутов Kong (поселе полной установки, контейнер можно удалить).
+>    1. Для http://monolith:8080 установлен weigth = 100.
+>    2. Для http://movies-service:8081 установлен weigth = 0 (чтобы автотесты проходили все. В сервисе movies-service отсутствут /api/users - будет выдавать ошибку, и отличается путь health - не стал усложнять путь).
+>    3. Для проверки балансировки можно выполнить команды: 
+>       1. `curl -X DELETE http://localhost:8001/upstreams/backend/targets/movies-service:8081`   - для удаления маршрута
+>       2. `curl -i -X POST http://localhost:8001/upstreams/backend/targets   --data target=movies-service:8081   --data weight=100`    - для изменения веса.
+>       3. После этого вызвать `curl --location 'http://localhost:8000/health'`   - работать будет через раз (когда обращение к http://monolith:8080 запрос будет успешный, а к http://movies-service:8081 неуспешный, так как путь будет не найден.)
+
 
 ### 2. Kafka
  Вам как архитектуру нужно также проверить гипотезу насколько просто реализовать применение Kafka в данной архитектуре.
@@ -58,6 +77,25 @@
 
 Необходимые тесты для проверки этого API вызываются при запуске npm run test:local из папки tests/postman 
 Приложите скриншот тестов и скриншот состояния топиков Kafka из UI http://localhost:8090 
+
+Результаты тестов:
+
+**Лог контейнера cinemaabyss-events-service после старта**
+![Лог контейнера cinemaabyss-events-service после старта](./img/events_start.png)
+**Состояние кафки после старта**
+![Состояние кафки после старта](./img/kafka_start.png)
+**Результаты тестов**
+![Результаты тестов](./img/test_result.png)
+**Лог контейнера cinemaabyss-events-service после тестов**
+![Лог контейнера cinemaabyss-events-service после тестов](./img/events_result.png)
+**Состояние кафки после тестов**
+![Состояние кафки после тестов](./img/kafka_result.png)
+**Состояние топика movie-events после тестов**
+![Состояние топика movie-events после тестов](./img/kafka_result_01.png)
+**Состояние топика user-events после тестов**
+![Состояние топика user-events после тестов](./img/kafka_result_02.png)
+**Состояние топика paiments-events после тестов после тестов**
+![Состояние топика paiments-events после тестов после тестов](./img/kafka_result_03.png)
 
 # Задание 3
 

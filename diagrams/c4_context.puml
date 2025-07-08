@@ -1,0 +1,26 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Context.puml
+!include <office/users/users.puml>
+
+title Диаграмма контекста - Кинобездна
+
+Person_Ext(Customer, "Пользователи", $sprite="users")
+Person(User, "Администраторы", $sprite="users")
+System(CinemaAbyss, "Кинобезна", "Текущее монолитное приложение", "", "", "", "monolith")
+System_Ext(OnlineCinema, "Онлайн-кинотеатры", "", "", "", "", "")
+System_Ext(PaymentSystem, "Платежная система", "", "", "", "", "")
+System_Ext(RecommendationSystem	, "Рекомендательная система", "", "", "", "", "")
+SystemDb_Ext(S3	, "S3", "", "", "", "", "")
+
+Rel_D(Customer, CinemaAbyss, "Использует систему", "", "", "", "", "")
+Rel_D(User, CinemaAbyss, "Администрирует систему", "", "", "", "", "")
+Rel_L(CinemaAbyss, PaymentSystem, "Обрабатывает платежи", "", "", "", "", "")
+Rel_R(CinemaAbyss, RecommendationSystem, "Запрашивает рекомендации", "", "", "", "", "")
+Rel_D(CinemaAbyss, S3, "Сохраняет данные", "", "", "", "", "")
+Rel_D(CinemaAbyss, OnlineCinema, "Запрашивает видео", "", "", "", "", "")
+
+Lay_L(S3, OnlineCinema)
+
+
+@enduml

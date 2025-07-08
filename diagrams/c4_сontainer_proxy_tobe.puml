@@ -1,0 +1,54 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Container.puml
+!include <office/users/users.puml>
+
+title Контейнерная диаграмма - Кинобездна: Proxy Service TO-BE
+
+'Пользователи
+
+Person_Ext(Customer, "Пользователи", $sprite="users")
+Person(User, "Администраторы", $sprite="users")
+
+
+'Система Кинобездна
+System_Boundary(CinemaAbyss, Кинобездна) {
+  Container(WebApp, "Web Application", "", "Веб интерфейс для подключения через ноутбуки")
+  Container(CinemaAbyssMain, "CinemaAbyss Main", "Go", "Текущее монолитное приложение")
+  Container(MobileApp, "Mobile Application", "", "Мобильное подключение")
+  Container(SmartTVApp, "SmartTV Application", "", "Приложение SmartTV для подключения с приставки")
+
+  'Новые микросервисы
+  Container(ProxyService, "Proxy Service", "Kong", "Маршрутизация запросов")
+  Container(PaymentService, "Payment Service", "", "Обработка платежей")
+  Container(MoviesService, "Movies Service", "Python", "Работа с метаданными фильмов", $link="https://plantuml.com/link")
+  Container(RecommendationService, "Recommendation Service", "", "Работа с рекомендациями")
+  Container(MoviesOnlineService, "Movies Online Service", "", "Просмотр фильмов online")  
+  Container(UsersService, "Users Service", "", "Управление пользователями")
+  Container(SubscriptionService, "Subscription Service", "", "Управление подписками")
+}
+
+'Отношение от пользователейum
+Rel(Customer, WebApp, "Использует систему через ноутбуки")
+Rel(Customer, MobileApp, "Использует систему через мобильное приложение")
+Rel(Customer, SmartTVApp, "Использует систему через SmartTV приставку")
+Rel(User, WebApp, "Администрирует систему")
+
+
+'Отношение от Frontend
+Rel(WebApp, ProxyService, "")
+Rel(MobileApp, ProxyService, "")
+Rel(SmartTVApp, ProxyService, "")
+
+
+'Отношения от Proxy Service
+Rel(ProxyService, CinemaAbyssMain, "Текущее монолитное решение")
+Rel(ProxyService, MoviesService, "Создание/просмотр фильмов")
+Rel(ProxyService, PaymentService, "Регистрация/просмотр платежей")
+Rel(ProxyService, RecommendationService, "Получение рекомендаций")
+Rel(ProxyService, MoviesOnlineService, "Просмотр фильмов Online")
+Rel(ProxyService, UsersService, "Регистрация/Авторизация")
+Rel(ProxyService, SubscriptionService, "Оформление/Просмотр подписок")
+
+
+@enduml

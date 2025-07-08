@@ -1,0 +1,58 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Container.puml
+!include <office/users/users.puml>
+
+title Контейнерная диаграмма - Кинобездна: CinemaAbyss Main TO-BE
+
+'Пользователи
+
+Person_Ext(Customer, "Пользователи", $sprite="users")
+Person(User, "Администраторы", $sprite="users")
+
+
+'Система Кинобездна
+System_Boundary(CinemaAbyss, Кинобездна) {
+  Container(WebApp, "Web Application", "", "Веб интерфейс для подключения через ноутбуки")
+  Container(CinemaAbyssMain, "CinemaAbyss Main", "Go", "Текущее монолитное приложение")
+  Container(MobileApp, "Mobile Application", "", "Мобильное подключение")
+  Container(SmartTVApp, "SmartTV Application", "", "Приложение SmartTV для подключения с приставки")
+  ContainerQueue(EventBroker, "Event Broker", "RabbitMQ", "Брокер сообщений для рекомендаций")
+  ContainerDb(Database, "Database", "PostgreSQL", "Централизованная база данных")
+
+  'Новые микросервисы
+  Container(ProxyService, "Proxy Service", "Kong", "Маршрутизация запросов")
+}
+
+'Внешнее окружение системы Кинобездна
+Container_Ext(OnlineCinema, "Онлайн-кинотеатры")
+Container_Ext(PaymentSystem, "Платежная система")
+Container_Ext(RecommendationSystem	, "Рекомендательная система")
+ContainerDb_Ext(S3, "S3")
+
+'Отношение от пользователей
+Rel(Customer, WebApp, "Использует систему через ноутбуки")
+Rel(Customer, MobileApp, "Использует систему через мобильное приложение")
+Rel(Customer, SmartTVApp, "Использует систему через SmartTV приставку")
+Rel(User, WebApp, "Администрирует систему")
+
+
+'Отношение от Frontend
+Rel(WebApp, ProxyService, "")
+Rel(MobileApp, ProxyService, "")
+Rel(SmartTVApp, ProxyService, "")
+
+
+'Отношения от Proxy Service
+Rel(ProxyService, CinemaAbyssMain, "Текущее монолитное решение")
+
+
+'Отношения от CinemaAbyssMain
+Rel_L(CinemaAbyssMain, PaymentSystem, "Обрабатывает платежи")
+Rel_R(CinemaAbyssMain, EventBroker, "Запрашивает рекомендации")
+Rel_L(CinemaAbyssMain, Database, "Сохраняет и запрашивает данные")
+Rel_R(EventBroker, RecommendationSystem, "Запрашивает рекомендации")
+Rel(CinemaAbyssMain, S3, "Сохраняет данные")
+Rel(CinemaAbyssMain, OnlineCinema, "Запрашивает видео")
+
+@enduml

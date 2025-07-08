@@ -1,0 +1,2 @@
+CREATE DATABASE cinemaabyss;
+CREATE DATABASE kong;

@@ -1,0 +1,103 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Container.puml
+!include <office/users/users.puml>
+
+title Контейнерная диаграмма - Кинобездна AS-IS
+
+'Пользователи
+
+Person_Ext(Customer, "Пользователи", $sprite="users")
+Person(User, "Администраторы", $sprite="users")
+
+
+'Система Кинобездна
+System_Boundary(CinemaAbyss, Кинобездна) {
+  Container(WebApp, "Web Application", "", "Веб интерфейс для подключения через ноутбуки")
+  Container(CinemaAbyssMain, "CinemaAbyss Main", "Go", "Текущее монолитное приложение")
+  Container(MobileApp, "Mobile Application", "", "Мобильное подключение")
+  Container(SmartTVApp, "SmartTV Application", "", "Приложение SmartTV для подключения с приставки")
+  ContainerQueue(EventBroker, "Event Broker", "RabbitMQ", "Брокер сообщений для рекомендаций")
+  ContainerDb(Database, "Database", "PostgreSQL", "Централизованная база данных")
+
+  'Новые микросервисы
+  Container(ProxyService, "Proxy Service", "Kong", "Маршрутизация запросов")
+  Container(PaymentService, "Payment Service", "", "Обработка платежей")
+  Container(MoviesService, "Movies Service", "Python", "Работа с метаданными фильмов")
+  Container(RecommendationService, "Recommendation Service", "", "Работа с рекомендациями")
+  Container(MoviesOnlineService, "Movies Online Service", "", "Просмотр фильмов online")  
+  Container(UsersService, "Users Service", "", "Управление пользователями")
+  Container(SubscriptionService, "Subscription Service", "", "Управление подписками")
+  Container(EventsService, "EventsService", "Apache Kafka", "Коммуникация между сервисами")
+}
+
+'Внешнее окружение системы Кинобездна
+Container_Ext(OnlineCinema, "Онлайн-кинотеатры")
+Container_Ext(PaymentSystem, "Платежная система")
+Container_Ext(RecommendationSystem	, "Рекомендательная система")
+ContainerDb_Ext(S3, "S3")
+
+'Отношение от пользователей
+Rel(Customer, WebApp, "Использует систему через ноутбуки")
+Rel(Customer, MobileApp, "Использует систему через мобильное приложение")
+Rel(Customer, SmartTVApp, "Использует систему через SmartTV приставку")
+Rel(User, WebApp, "Администрирует систему")
+
+
+'Отношение от Frontend
+Rel(WebApp, ProxyService, "")
+Rel(MobileApp, ProxyService, "")
+Rel(SmartTVApp, ProxyService, "")
+
+
+'Отношения от Proxy Service
+Rel(ProxyService, CinemaAbyssMain, "Текущее монолитное решение")
+Rel(ProxyService, MoviesService, "Создание/просмотр фильмов")
+Rel(ProxyService, PaymentService, "Регистрация/просмотр платежей")
+Rel(ProxyService, RecommendationService, "Получение рекомендаций")
+Rel(ProxyService, MoviesOnlineService, "Просмотр фильмов Online")
+Rel(ProxyService, UsersService, "Регистрация/Авторизация")
+Rel(ProxyService, SubscriptionService, "Оформление/Просмотр подписок")
+
+
+'Отношения от CinemaAbyssMain
+Rel(CinemaAbyssMain, PaymentSystem, "Обрабатывает платежи")
+BiRel(CinemaAbyssMain, EventBroker, "Запрашивает рекомендации")
+Rel(CinemaAbyssMain, Database, "Сохраняет и запрашивает данные")
+Rel(CinemaAbyssMain, S3, "Сохраняет/Получает данные по фильмам")
+Rel(CinemaAbyssMain, OnlineCinema, "Онлайн просмотр фильмов")
+
+'Отношения от PaymentService
+Rel(PaymentService, PaymentSystem, "Обрабатывает платежи")
+Rel(PaymentService, Database, "Сохраняет данные по платежам")
+Rel(PaymentService, EventsService, "Отправляет события по транзакциям")
+
+'Отношения от MoviesService
+Rel(MoviesService, Database, "Сохраняет и получает метданные фильмов")
+Rel(MoviesService, EventsService, "Отправляет события по запросам метаданных фильмов")
+
+'Отношения от RecommendationService
+BiRel(RecommendationService, EventsService, "Отправляет события по рекомендациям")
+Rel(RecommendationService, EventBroker, "Запрашивает рекомендации")
+Rel(RecommendationService, Database, "Сохраняет данные по рекомендациям")
+
+'Отношения от MoviesOnlineService
+Rel(MoviesOnlineService, S3, "Сохраняет данные по фильмам")
+Rel(MoviesService, EventsService, "Отправляет события по запросам пользователей")
+Rel(MoviesOnlineService, OnlineCinema, "Онлайн просмотр фильмов")
+
+'Отношения от UsersService
+BiRel(UsersService, EventsService, "Отправляет события по входа/выхода")
+Rel(UsersService, Database, "Сохраняет/запрашивает данные пользователей")
+
+'Отношения от SubscriptionService
+BiRel(SubscriptionService, EventsService, "Отправляет события по подпискам")
+Rel(SubscriptionService, Database, "Сохраняет/запрашивает данные подписок")
+
+BiRel(EventBroker, RecommendationSystem, "Запрашивает рекомендации")
+
+Lay_L(PaymentService, PaymentSystem)
+Lay_D(Database, S3)
+Lay_D(Database, OnlineCinema)
+
+@enduml

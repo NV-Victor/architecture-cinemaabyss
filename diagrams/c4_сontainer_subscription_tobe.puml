@@ -1,0 +1,48 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Container.puml
+!include <office/users/users.puml>
+
+title Контейнерная диаграмма - Кинобездна: Subscription Service TO-BE
+
+'Пользователи
+
+Person_Ext(Customer, "Пользователи", $sprite="users")
+Person(User, "Администраторы", $sprite="users")
+
+
+'Система Кинобездна
+System_Boundary(CinemaAbyss, Кинобездна) {
+  Container(WebApp, "Web Application", "", "Веб интерфейс для подключения через ноутбуки")
+  Container(MobileApp, "Mobile Application", "", "Мобильное подключение")
+  Container(SmartTVApp, "SmartTV Application", "", "Приложение SmartTV для подключения с приставки")
+  ContainerDb(Database, "Database", "PostgreSQL", "Централизованная база данных")
+
+  'Новые микросервисы
+  Container(ProxyService, "Proxy Service", "Kong", "Маршрутизация запросов")
+  Container(SubscriptionService, "Subscription Service", "", "Управление подписками")
+  Container(EventsService, "EventsService", "Apache Kafka", "Коммуникация между сервисами")
+}
+
+'Отношение от пользователей
+Rel(Customer, WebApp, "Использует систему через ноутбуки")
+Rel(Customer, MobileApp, "Использует систему через мобильное приложение")
+Rel(Customer, SmartTVApp, "Использует систему через SmartTV приставку")
+Rel(User, WebApp, "Администрирует систему")
+
+
+'Отношение от Frontend
+Rel(WebApp, ProxyService, "")
+Rel(MobileApp, ProxyService, "")
+Rel(SmartTVApp, ProxyService, "")
+
+
+'Отношения от Proxy Service
+Rel(ProxyService, SubscriptionService, "Оформление/Просмотр подписок")
+
+'Отношения от SubscriptionService
+BiRel(SubscriptionService, EventsService, "Отправляет события по подпискам")
+Rel(SubscriptionService, Database, "Сохраняет/запрашивает данные подписок")
+
+
+@enduml
