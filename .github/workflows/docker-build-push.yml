@@ -86,8 +86,7 @@ jobs:
           cache-to: type=gha,mode=max
 
 #Для Events Service
-      - name: Extract metadata (tags, labels) for Для Events Service
- Service
+      - name: Extract metadata (tags, labels) for Events Service
         id: meta-events
         uses: docker/metadata-action@v4
         with:
