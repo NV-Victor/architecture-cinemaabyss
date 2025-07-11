@@ -1,4 +1,21 @@
 {{- if .Values.eventsService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: events-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: events-service
+    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app: events-service
+  ports:
+    - protocol: TCP
+      port: {{ .Values.eventsService.service.port }}
+      targetPort: {{ .Values.eventsService.service.targetPort }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,29 +30,40 @@ spec:
   selector:
     matchLabels:
       app: events-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: events-service
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -U postgres -h postgres -p 5432; do echo 'Waiting for Postgres...'; sleep 1; done"]
+        - name: wait-for-kafka
+          image: alpine:3.18
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache netcat-openbsd
+              until nc -z kafka 9092; do
+                echo "Waiting for Kafka...";
+                sleep 1;
+              done
       containers:
-      - name: events-service
-       .... тут
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: events-service
-  namespace: {{ .Values.global.namespace }}
-  labels:
-    app: events-service
-    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-spec:
- ........ и тут
+        - name: events-service
+          image: {{ .Values.eventsService.image.repository }}:{{ .Values.eventsService.image.tag }}
+          ports:
+            - containerPort: 8082
+          env:
+            - name: PORT
+              value: "8082"
+            - name: KAFKA_BROKERS
+              value: kafka:9092
+          readinessProbe:
+            httpGet:
+              path: /api/events/health
+              port: 8082
+            initialDelaySeconds: 5
+            periodSeconds: 5
 {{- end }}

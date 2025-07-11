@@ -23,6 +23,10 @@ spec:
       labels:
         app: movies-service
     spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:16
+        command: ["sh", "-c", "until pg_isready -U postgres -h postgres -p 5432; do echo 'Waiting for Postgres...'; sleep 1; done"]
       containers:
       - name: movies-service
         image: {{ .Values.moviesService.image.repository }}:{{ .Values.moviesService.image.tag }}

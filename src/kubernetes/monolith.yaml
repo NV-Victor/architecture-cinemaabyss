@@ -20,9 +20,13 @@ spec:
       labels:
         app: monolith
     spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:16
+        command: ["sh", "-c", "until pg_isready -U postgres -h postgres -p 5432; do echo 'Waiting for Postgres...'; sleep 1; done"]
       containers:
       - name: monolith
-        image:  ghcr.io/db-exp/cinemaabysstest/monolith:latest
+        image:  ghcr.io/nv-victor/architecture-cinemaabyss/monolith:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

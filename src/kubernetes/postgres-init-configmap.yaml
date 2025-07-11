@@ -5,6 +5,12 @@ metadata:
   namespace: cinemaabyss
 data:
   init.sql: |
+
+    -- Creating Databases
+
+    CREATE DATABASE cinemaabyss;
+    CREATE DATABASE kong;
+
     -- Initialize CinemaAbyss Database Schema
 
     -- Connect to the database
