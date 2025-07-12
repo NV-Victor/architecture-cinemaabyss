@@ -8,6 +8,13 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
 data:
   init.sql: |
+
+    -- Creating Databases
+
+    CREATE DATABASE {{ .Values.database.name }};
+    CREATE DATABASE {{ .Values.database.kong }};
+
+
     -- Initialize CinemaAbyss Database Schema
 
     -- Connect to the database

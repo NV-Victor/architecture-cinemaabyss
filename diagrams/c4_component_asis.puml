@@ -1,0 +1,32 @@
+@startuml C4_Elements
+
+!include ./C4-PlantUML-Git/C4_Component.puml
+
+title Диаграмма компонентов - Кинобездна AS-IS
+
+
+System_Boundary(CinemaAbyss, Кинобезна) {
+
+  Container(CinemaAbyssMain, "CinemaAbyss Main", "Go"){
+    Component(Main, "Main HTTP Server", "", "Запуск приложения")
+    Component(UserHandler, "User Handler", "", "Реализует сервисы для получения запросов на управление пользователями")
+    Component(MovieHandler, "Movie Handler", "", "Реализует сервисы для получения запросов на управление фильмами")
+    Component(PaymentHandler, "Payment Handler", "Реализует сервисы для получения запросов на управление платежами", "Описание")
+    Component(SubscriptionHandler, "Subscription Handler", "RabbitMQ", "Описание")
+  }
+
+  ContainerDb(Database, "Database", "PostgreSQL", "Описание")
+
+  Rel_D(Main, UserHandler, "Создание и получение пользователей", "HTTP/REST")
+  Rel_D(Main, MovieHandler, "Создание и получение метаданных фильмов", "HTTP/REST")
+  Rel_D(Main, PaymentHandler, "Создание и получение платажей", "HTTP/REST")
+  Rel_D(Main, SubscriptionHandler, "Создание и получение подписок", "HTTP/REST")
+
+  Rel_D(UserHandler, Database, "Создание и чтение данных", "SQL")
+  Rel_D(MovieHandler, Database, "Создание и чтение данных", "SQL")
+  Rel_D(PaymentHandler, Database, "Создание и чтение данных", "SQL")
+  Rel_D(SubscriptionHandler, Database, "Создание и чтение данных", "SQL")
+}
+
+
+@enduml

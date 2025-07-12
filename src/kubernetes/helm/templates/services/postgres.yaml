@@ -35,11 +35,11 @@ spec:
             secretKeyRef:
               name: cinemaabyss-secrets
               key: DB_PASSWORD
-        - name: POSTGRES_DB
-          valueFrom:
-            configMapKeyRef:
-              name: cinemaabyss-config
-              key: DB_NAME
+#        - name: POSTGRES_DB
+#          valueFrom:
+#            configMapKeyRef:
+#              name: cinemaabyss-config
+#              key: DB_NAME
         resources:
           {{- toYaml .Values.database.resources | nindent 10 }}
         volumeMounts:

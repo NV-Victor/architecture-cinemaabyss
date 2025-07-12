@@ -127,6 +127,10 @@ spec:
       labels:
         app: kafka
     spec:
+      initContainers:
+        - name: wait-for-zookeeper
+          image: busybox
+          command: ['sh', '-c', 'until nc -z zookeeper 2181; do echo "Waiting for Zookeeper..."; sleep 1; done']
       containers:
       - name: kafka
         image: wurstmeister/kafka:2.13-2.7.0
@@ -174,3 +178,63 @@ spec:
       - name: kafka-data
         persistentVolumeClaim:
           claimName: kafka-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: cinemaabyss
+spec:
+  type: ClusterIP
+  selector:
+    app: kafka-ui
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: cinemaabyss
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: alpine:3.18
+          command:
+            - sh
+            - -c
+            - |
+              apk add --no-cache netcat-openbsd
+              until nc -z kafka 9092; do
+                echo "Waiting for Kafka...";
+                sleep 1;
+              done
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: cinemaabyss
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: kafka:9092
+            - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+              value: zookeeper:2181
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5

@@ -1,4 +1,30 @@
 {{- if .Values.proxyService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: proxy-service
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: proxy-service
+    app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  selector:
+    app: proxy-service
+  ports:
+    - name: proxy
+      port: {{ .Values.proxyService.service.port }}
+      targetPort: {{ .Values.proxyService.service.targetPort }}
+    - name: proxy-ssl
+      port: 8443
+      targetPort: 8443
+    - name: admin
+      port: 8001
+      targetPort: 8001
+    - name: admin-ssl
+      port: 8444
+      targetPort: 8444
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -13,30 +39,95 @@ spec:
   selector:
     matchLabels:
       app: proxy-service
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: proxy-service
     spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -U postgres -h postgres -p 5432; do echo 'Waiting for Postgres...'; sleep 1; done"]
+
+        - name: kong-migrations
+          image: kong:3.6
+          env:
+            - name: KONG_DATABASE
+              value: postgres
+            - name: KONG_PG_HOST
+              value: postgres
+            - name: KONG_PG_USER
+              value: postgres
+            - name: KONG_PG_PASSWORD
+              value: postgres_password
+            - name: KONG_PG_DATABASE
+              value: kong
+          command: ["kong", "migrations", "bootstrap"]
       containers:
-      - name: proxy-service
-        ..... тут
+        - name: kong
+          image: {{ .Values.proxyService.image.repository }}:{{ .Values.proxyService.image.tag }}
+          ports:
+            - containerPort: 8000
+            - containerPort: 8443
+            - containerPort: 8001
+            - containerPort: 8444
+          env:
+            - name: KONG_DATABASE
+              value: postgres
+            - name: KONG_PG_HOST
+              value: postgres
+            - name: KONG_PG_USER
+              value: postgres
+            - name: KONG_PG_PASSWORD
+              value: postgres_password
+            - name: KONG_PG_DATABASE
+              value: kong
+            - name: KONG_PROXY_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_ADMIN_ACCESS_LOG
+              value: /dev/stdout
+            - name: KONG_PROXY_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_ERROR_LOG
+              value: /dev/stderr
+            - name: KONG_ADMIN_LISTEN
+              value: 0.0.0.0:8001
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: 8001
+            initialDelaySeconds: 10
+            periodSeconds: 5
 ---
-apiVersion: v1
-kind: Service
+apiVersion: batch/v1
+kind: Job
 metadata:
-  name: proxy-service
+  name: kong-init
   namespace: {{ .Values.global.namespace }}
   labels:
     app: proxy-service
     app.kubernetes.io/name: {{ include "cinemaabyss.name" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
-  selector:
-    ... и тут
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      initContainers:
+        - name: wait-for-kong
+          image: busybox
+          command: ["sh", "-c", "until nc -z proxy-service 8001; do echo 'Waiting for Kong...'; sleep 2; done"]
+
+      containers:
+        - name: kong-init
+          image: curlimages/curl
+          command: ["/bin/sh", "-c", "sh /kong-init.sh"]
+          volumeMounts:
+            - name: kong-init-script
+              mountPath: /kong-init.sh
+              subPath: kong-init.sh
+      volumes:
+        - name: kong-init-script
+          configMap:
+            name: kong-init-script
 {{- end }}

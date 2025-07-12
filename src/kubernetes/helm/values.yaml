@@ -5,12 +5,13 @@ global:
 
 # Image pull secrets
 imagePullSecrets:
-  dockerconfigjson: ewoJImF1dGhzIjogewoJCSJnaGNyLmlvIjogewoJCQkiYXV0aCI6
+  dockerconfigjson: ewoJImF1dGhzIjogewoJCSJnaGNyLmlvIjogewoJCQkiYXV0aCI6ICJibll0ZG1samRHOXlPbWRvY0Y4M1lqWkVORVJDYUd0NFdUVkJORnAwVFdoTWFrZEZlalEyT1VweFYzb3lNVFJyUVVFPSIKCQl9Cgl9Cn0=
 # Database configuration
 database:
   host: postgres
   port: 5432
   name: cinemaabyss
+  kong: kong
   user: postgres
   password: cG9zdGdyZXNfcGFzc3dvcmQ=
   image:
@@ -33,7 +34,7 @@ database:
 monolith:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/monolith
+    repository: ghcr.io/nv-victor/architecture-cinemaabyss/monolith
     tag: latest
     pullPolicy: Always
   replicas: 1
@@ -53,34 +54,25 @@ monolith:
 proxyService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/proxy-service
-    tag: latest
-    pullPolicy: Always
+    repository: kong
+    tag: 3.6
   replicas: 1
-  resources:
-    limits:
-      cpu: 300m
-      memory: 256Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
   service:
     port: 80
     targetPort: 8000
-    type: ClusterIP
 
-# Movies service configuration
+# Movies configuration
 moviesService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/movies-service
+    repository: ghcr.io/nv-victor/architecture-cinemaabyss/movies-service
     tag: latest
     pullPolicy: Always
   replicas: 1
   resources:
     limits:
-      cpu: 300m
-      memory: 256Mi
+      cpu: 500m
+      memory: 512Mi
     requests:
       cpu: 100m
       memory: 128Mi
@@ -89,25 +81,17 @@ moviesService:
     targetPort: 8081
     type: ClusterIP
 
-# Events service configuration
+
+# Events configuration
 eventsService:
   enabled: true
   image:
-    repository: ghcr.io/db-exp/cinemaabysstest/events-service
+    repository: ghcr.io/nv-victor/architecture-cinemaabyss/events-service
     tag: latest
-    pullPolicy: Always
   replicas: 1
-  resources:
-    limits:
-      cpu: 300m
-      memory: 256Mi
-    requests:
-      cpu: 100m
-      memory: 128Mi
   service:
     port: 8082
     targetPort: 8082
-    type: ClusterIP
 
 # Kafka configuration
 kafka:
@@ -167,16 +151,8 @@ ingress:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
   hosts:
-    - host: cinemaabyss.example.com
-      paths:
-        - path: /
-          pathType: Prefix
-          service: proxy-service
-          port: 80
-        - path: /api/events
-          pathType: Prefix
-          service: events-service
-          port: 8082
+    host: cinemaabyss.example.com
+    hostKafkaUi: kafka-ui.cinemaabyss.example.com
 
 # Application configuration
 config:

@@ -1,0 +1,19 @@
+@startuml
+title Диаграмма компонентов: CinemaAbyss монолит AS-IS
+
+package "Web Server (Go)" {
+    [Main HTTP Server] --> [User Handler]
+    [Main HTTP Server] --> [Movie Handler]
+    [Main HTTP Server] --> [Payment Handler]
+    [Main HTTP Server] --> [Subscription Handler]
+}
+
+package "PostgreSQL Service" {
+    database "PostgreSQL Database" as PostgreSQL
+}
+
+[User Handler] --> PostgreSQL : создание и получение пользователей
+[Movie Handler] --> PostgreSQL : создание и получение фильмов
+[Payment Handler] --> PostgreSQL : создание и получение платежей
+[Subscription Handler] --> PostgreSQL : создание и получение подписок
+@enduml

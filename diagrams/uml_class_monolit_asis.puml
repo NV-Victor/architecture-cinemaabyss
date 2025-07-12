@@ -1,0 +1,69 @@
+@startuml
+
+title Диаграмма классов: CinemaAbyss монолит AS-IS
+
+package "User Handler" {
+  class User {
+    - int id
+    - string username
+    - string email
+
+    + getAllUsers()
+    + getUserByID()
+    + createUser()
+  }
+}
+
+package "Movie Handler" {
+  class Movie {
+    - int id
+    - string title
+    - string description
+    - float64 rating
+
+    + getAllMovies()
+    + getMovieByID()
+    + createMovie()
+  }
+
+  class MovieGenres {
+    - int movie_id
+    - string genre
+  }
+}
+
+package "Payment Handler" {
+  class Payment {
+    - int id
+    - int userID
+    - float64 amount
+    - time.Time timestamp
+
+    + getAllPayments()
+    + getPaymentByID()
+    + getPaymentsByUserID()
+    + createPayment()
+  }
+}
+
+package "Subscription Handler" {
+  class Subscription {
+    - int id
+    - int userID
+    - string planType
+    - time.Time startDate
+    - time.Time endDate
+
+    + getAllSubscriptions()
+    + getSubscriptionByID()
+    + getSubscriptionsByUserID()
+    + createSubscription()
+  }
+}
+
+' Отношения между сущностями
+User "1" --> "*" Payment : userID
+User "1" --> "*" Subscription : userID
+Movie --> "*" MovieGenres : movie_id
+
+@enduml

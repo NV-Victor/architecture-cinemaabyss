@@ -20,9 +20,13 @@ spec:
       labels:
         app: movies-service
     spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: postgres:16
+        command: ["sh", "-c", "until pg_isready -U postgres -h postgres -p 5432; do echo 'Waiting for Postgres...'; sleep 1; done"]
       containers:
       - name: movies-service
-        image: ghcr.io/db-exp/cinemaabysstest/movies-service:latest
+        image: ghcr.io/nv-victor/architecture-cinemaabyss/movies-service:latest
         imagePullPolicy: Always
         ports:
         - containerPort: 8081
